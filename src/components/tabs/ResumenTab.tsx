@@ -38,8 +38,7 @@ export default function ResumenTab({ evaluations, domains, victories }: Props) {
     );
   }
 
-  const initial = evaluations[0];
-  const current = evaluations[evaluations.length - 1];
+  // evaluations[0] and evaluations[evaluations.length - 1] used via domains prop
 
   // Radar data
   const radarCombined = domains.map((d) => ({

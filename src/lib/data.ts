@@ -88,6 +88,7 @@ function parsePatient(headers: string[], row: string[]): Patient {
 function parseFamilyInfo(headers: string[], row: string[]): FamilyInfo {
   const r = rowToObject(headers, row);
   return {
+    id: r["ID familia"] || r["ID Familia"] || "",
     patientId: r["ID Paciente"] || "",
     personalMessage: r["Mensaje personalizado"] || "",
     nextSession: r["Proxima cita"] || r["Próxima cita"] || "",
@@ -151,6 +152,7 @@ function parseACEEvaluation(headers: string[], row: string[]): ACEEvaluation {
 function parseSession(headers: string[], row: string[]): Session {
   const r = rowToObject(headers, row);
   return {
+    id: r["ID sesion"] || r["ID Sesion"] || "",
     patientId: r["ID Paciente"] || "",
     date: r["Fecha"] || "",
     sessionNumber: parseNumber(r["Nº Sesión"] || r["No Sesion"] || r["Nº Sesion"]),
@@ -166,6 +168,7 @@ function parseSession(headers: string[], row: string[]): Session {
 function parseVictory(headers: string[], row: string[]): Victory {
   const r = rowToObject(headers, row);
   return {
+    id: r["ID victoria"] || r["ID Victoria"] || "",
     date: r["Fecha"] || "",
     text: r["Victoria / Logro"] || r["Victoria/Logro"] || "",
     area: r["Area"] || r["Área"] || "",
@@ -176,6 +179,7 @@ function parseVictory(headers: string[], row: string[]): Victory {
 function parseRecommendation(headers: string[], row: string[]): Recommendation {
   const r = rowToObject(headers, row);
   return {
+    id: r["ID recomendacion"] || r["ID Recomendacion"] || "",
     area: r["Area"] || r["Área"] || "",
     activity: r["Actividad recomendada"] || "",
     frequency: r["Frecuencia"] || "",

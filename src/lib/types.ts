@@ -60,6 +60,7 @@ export interface ACEEvaluation {
 }
 
 export interface Session {
+  id: string;
   patientId: string;
   date: string;
   sessionNumber: number;
@@ -72,6 +73,7 @@ export interface Session {
 }
 
 export interface Victory {
+  id: string;
   date: string;
   text: string;
   area: string;
@@ -79,6 +81,7 @@ export interface Victory {
 }
 
 export interface Recommendation {
+  id: string;
   area: string;
   activity: string;
   frequency: string;
@@ -97,6 +100,7 @@ export interface DomainProgress {
 
 
 export interface FamilyInfo {
+  id: string;
   patientId: string;
   personalMessage: string;
   nextSession: string;

@@ -8,10 +8,12 @@ import SesionesTab from "@/components/tabs/SesionesTab";
 import VictoriasTab from "@/components/tabs/VictoriasTab";
 import HogarTab from "@/components/tabs/HogarTab";
 import GuiasTab from "@/components/tabs/GuiasTab";
+import ChatBot from "@/components/ChatBot";
 import type { DashboardData } from "@/lib/types";
 
 interface Props {
   data: DashboardData;
+  patientContext: string;
 }
 
 const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
@@ -70,7 +72,7 @@ const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
   },
 };
 
-export default function PatientDashboard({ data }: Props) {
+export default function PatientDashboard({ data, patientContext }: Props) {
   const [activeTab, setActiveTab] = useState("resumen");
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -94,7 +96,7 @@ export default function PatientDashboard({ data }: Props) {
 
   const tabs = [
     { id: "resumen", label: "Resumen", icon: "✨" },
-    { id: "dominios", label: "Dominios", icon: "🧠" },
+    { id: "dominios", label: "Habilidades", icon: "🧠" },
     { id: "sesiones", label: "Sesiones", icon: "📝" },
     { id: "victorias", label: "Victorias", icon: "🏆" },
     { id: "hogar", label: "En casa", icon: "🏠" },
@@ -497,6 +499,8 @@ export default function PatientDashboard({ data }: Props) {
           terapiadelenguaje.cr
         </div>
       </div>
+
+      <ChatBot patientContext={patientContext} patientName={patient.name} />
     </div>
   );
 }

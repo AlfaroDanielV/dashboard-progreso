@@ -18,7 +18,8 @@ export async function GET(request: Request) {
       rowCount: data.length - 1,
       sampleRows: data.slice(1, 4),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -20,7 +20,7 @@ interface Props {
   patientFirstName: string;
 }
 
-export default function DominiosTab({ domains, patientFirstName }: Props) {
+export default function DominiosTab({ domains }: Props) {
   if (domains.length === 0) {
     return (
       <Card>
