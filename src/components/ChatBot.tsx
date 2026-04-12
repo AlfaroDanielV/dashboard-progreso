@@ -10,11 +10,12 @@ interface Message {
 interface Props {
   patientContext: string;
   patientName: string;
+  pruebas?: string[];
 }
 
 const MAX_MESSAGES_PER_SESSION = 20;
 
-export default function ChatBot({ patientContext, patientName }: Props) {
+export default function ChatBot({ patientContext, patientName, pruebas = [] }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -34,6 +35,26 @@ export default function ChatBot({ patientContext, patientName }: Props) {
   }, [isOpen]);
 
   const firstName = patientName.split(" ")[0];
+
+  const hasTamizaje = pruebas.some((p) =>
+    p.toLowerCase().replace(/[-_\s]/g, "").includes("tamizaje")
+  );
+  const hasACE = pruebas.length === 0 ||
+    pruebas.some((p) => p.toLowerCase().replace(/[-_\s]/g, "").includes("ace"));
+
+  const suggestions = [
+    ...(hasACE ? [
+      `¿Cómo va ${firstName} en memoria?`,
+      "¿Qué significa su puntaje en atención?",
+    ] : []),
+    ...(hasTamizaje ? [
+      `¿Qué significa la clasificación CAS de ${firstName}?`,
+      `¿Qué tan bien le fue a ${firstName} en Habilidad Mental?`,
+      `¿Qué significa el resultado del reloj?`,
+    ] : []),
+    "¿Qué ejercicios le toca hacer en casa?",
+    "¿Cuándo es la próxima cita?",
+  ];
 
   const sendMessage = async () => {
     const trimmed = input.trim();
@@ -211,11 +232,7 @@ export default function ChatBot({ patientContext, patientName }: Props) {
             ¡Hola! Soy el asistente de Terapia del Lenguaje. Puede preguntarme
             sobre el progreso de {firstName} — por ejemplo:
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                `¿Cómo va ${firstName} en memoria?`,
-                "¿Qué ejercicios le toca hacer en casa?",
-                "¿Qué significa su puntaje en atención?",
-              ].map((suggestion, i) => (
+              {suggestions.map((suggestion, i) => (
                 <button
                   key={i}
                   onClick={() => {

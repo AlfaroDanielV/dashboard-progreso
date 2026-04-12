@@ -3,6 +3,7 @@
 import Card from "@/components/ui/Card";
 import { colors, fonts } from "@/config/brand";
 import type { Victory } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface Props {
   victories: Victory[];
@@ -76,7 +77,7 @@ export default function VictoriasTab({ victories, patientFirstName }: Props) {
                     color: colors.muted,
                   }}
                 >
-                  <span>{v.date}</span>
+                  <span>{formatDate(v.date)}</span>
                   <span
                     style={{
                       background: colors.lightSage,

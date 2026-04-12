@@ -16,6 +16,7 @@ export interface Patient {
   modality: string;
   familyContact: string;
   token: string;
+  pruebas: string[]; // e.g. ["ACE_III"], ["Tamizaje_Cognitivo"], or both
 }
 
 export interface ACEEvaluation {
@@ -57,6 +58,62 @@ export interface ACEEvaluation {
   fluencia: number;
   lenguaje: number;
   visuoespacial: number;
+}
+
+export interface TamizajeEvaluation {
+  evalId: string;
+  fecha: string;
+  examinador: string;
+  // Sección 1: Orientación e Información
+  io: {
+    nombre: number;
+    edad: number;
+    fechaNacimiento: number;
+    pais: number;
+    provincia: number;
+    lugar: number;
+    presidenteAnterior: number;
+    presidenteActual: number;
+    coloresBandera: number;
+    dia: number;
+    mes: number;
+    ano: number;
+    total: number; // /12
+  };
+  // Sección 2: Habilidad Mental
+  hm: {
+    contarPts: number;
+    alfabetoPts: number;
+    escribirNombrePts: number;
+    leerPts: number;
+    total: number; // /11
+  };
+  // Sección 3: Psicomotricidad
+  pm: {
+    laberintoPts: number;
+  };
+  // CAS: Escala de Deterioro
+  cas: {
+    total: number; // /35
+    clasificacion: string; // "A - Ausencia de deterioro", etc.
+  };
+  // Lenguaje
+  lenguaje: {
+    visoVerbalLamina: number; // /8
+    visoVerbalObjetos: number; // /8
+    frutasTotal: number;
+    palabrasMTotal: number;
+    repeticionTotal: number; // /4
+    comprensionTotal: number; // /5
+  };
+  // Reloj
+  reloj: {
+    esfera: number;
+    numeros: number;
+    manecillas: number;
+    total: number; // /10
+    sospechaDeficit: boolean;
+  };
 }
 
 export interface Session {
@@ -121,6 +178,7 @@ export interface DashboardData {
   patient: Patient;
   familyInfo: FamilyInfo;
   evaluations: ACEEvaluation[];
+  tamizaje: TamizajeEvaluation[];
   sessions: Session[];
   victories: Victory[];
   recommendations: Recommendation[];

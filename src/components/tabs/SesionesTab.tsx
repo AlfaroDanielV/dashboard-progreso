@@ -3,6 +3,7 @@
 import Card from "@/components/ui/Card";
 import { colors } from "@/config/brand";
 import type { Session } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface Props {
   sessions: Session[];
@@ -105,7 +106,7 @@ export default function SesionesTab({ sessions, patientFirstName }: Props) {
                   {s.sessionNumber}
                 </span>
                 <span style={{ fontSize: 13, color: colors.muted }}>
-                  {s.date}
+                  {formatDate(s.date)}
                 </span>
               </div>
               <span

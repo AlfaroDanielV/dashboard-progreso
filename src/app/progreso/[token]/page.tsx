@@ -11,7 +11,7 @@ interface PageProps {
 export const revalidate = 60; // ISR: revalidar cada 60 segundos
 
 function buildPatientContext(data: DashboardData): string {
-  const { patient, evaluations, sessions, victories, recommendations, domains, guides } = data;
+  const { patient, evaluations, tamizaje, sessions, victories, recommendations, domains, guides } = data;
 
   let context = `PACIENTE: ${patient.name}, ${patient.age} años\n`;
   context += `DIAGNÓSTICO: ${patient.diagnosis}\n`;
@@ -29,8 +29,17 @@ function buildPatientContext(data: DashboardData): string {
 
   if (evaluations.length > 0) {
     const latest = evaluations[evaluations.length - 1];
-    context += `ÚLTIMA EVALUACIÓN (${latest.date}): Total ACE-III = ${latest.totalACE}/100\n`;
+    context += `ÚLTIMA EVALUACIÓN ACE-III (${latest.date}): Total = ${latest.totalACE}/100\n`;
     context += `Atención: ${latest.atencion}/18, Memoria: ${latest.memoria}/26, Fluencia: ${latest.fluencia}/14, Lenguaje: ${latest.lenguaje}/26, Visuoespacial: ${latest.visuoespacial}/16\n\n`;
+  }
+
+  if (tamizaje && tamizaje.length > 0) {
+    const t = tamizaje[tamizaje.length - 1];
+    context += `TAMIZAJE COGNITIVO (CAS/NEUROPSI) — Evaluación del ${t.fecha}:\n`;
+    context += `CAS Total: ${t.cas.total}/35 — Clasificación: ${t.cas.clasificacion}\n`;
+    context += `Orientación: ${t.io.total}/12, Habilidad Mental: ${t.hm.total}/11, Psicomotricidad: ${t.pm.laberintoPts}/12\n`;
+    context += `Lenguaje: Denominación Visual ${t.lenguaje.visoVerbalLamina + t.lenguaje.visoVerbalObjetos}/16, Fluencia Verbal (Frutas: ${t.lenguaje.frutasTotal}, Palabras M: ${t.lenguaje.palabrasMTotal}), Repetición ${t.lenguaje.repeticionTotal}/4, Comprensión ${t.lenguaje.comprensionTotal}/5\n`;
+    context += `Reloj: ${t.reloj.total}/10 (Sospecha déficit: ${t.reloj.sospechaDeficit ? "Sí" : "No"})\n\n`;
   }
 
   if (sessions.length > 0) {

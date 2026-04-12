@@ -1,9 +1,10 @@
 // src/lib/data.ts
-import { getMultipleSheets, buildDriveFileMap } from "./sheets";
+import { getMultipleSheets, getSheetData, buildDriveFileMap } from "./sheets";
 import type {
   Patient,
   FamilyInfo,
   ACEEvaluation,
+  TamizajeEvaluation,
   Session,
   Victory,
   Recommendation,
@@ -53,19 +54,38 @@ function rowToObject(headers: string[], row: string[]): Record<string, string> {
 // dataStart: en qué fila (0-indexed) empiezan los datos
 
 const SHEET_CONFIG: Record<string, { headerRow: number; dataStart: number }> = {
-  Registro:        { headerRow: 2, dataStart: 3 },  // Filas 1-2 decorativas, headers en fila 3
-  ACE_III:         { headerRow: 1, dataStart: 2 },   // Fila 0 decorativa, headers en fila 1 (incluye ID ACE)
-  Sesiones:        { headerRow: 2, dataStart: 3 },   // Headers en fila 2 — ajustá si es diferente
-  Victorias:       { headerRow: 0, dataStart: 1 },
-  Recomendaciones: { headerRow: 0, dataStart: 1 },
-  Info_Familia:    { headerRow: 0, dataStart: 1 },
-  Guias:           { headerRow: 0, dataStart: 1 },
+  Registro:           { headerRow: 2, dataStart: 3 },  // Filas 1-2 decorativas, headers en fila 3
+  ACE_III:            { headerRow: 1, dataStart: 2 },   // Fila 0 decorativa, headers en fila 1
+  Sesiones:           { headerRow: 2, dataStart: 3 },
+  Victorias:          { headerRow: 0, dataStart: 1 },
+  Recomendaciones:    { headerRow: 0, dataStart: 1 },
+  Info_Familia:       { headerRow: 0, dataStart: 1 },
+  Guias:              { headerRow: 0, dataStart: 1 },
+  Tamizaje_Cognitivo: { headerRow: 0, dataStart: 1 },  // Standard: headers row 1, data row 2+
 };
+
+// ─── Normalize assessment names ───
+// Maps any variation of ACE / Tamizaje to the canonical key used in code.
+function normalizePrueba(p: string): string {
+  const low = p.toLowerCase().replace(/[-_\s]/g, "");
+  if (low.includes("ace")) return "ACE_III";
+  if (low.includes("tamizaje")) return "Tamizaje_Cognitivo";
+  return p; // unknown assessment — keep as-is
+}
 
 // ─── Parsers ───
 
 function parsePatient(headers: string[], row: string[]): Patient {
   const r = rowToObject(headers, row);
+
+  // Parse pruebas: comma-separated list, default to ACE_III if empty/missing
+  // Normalize each value to canonical form so "ACE-III", "ACE III", "ace_iii" all → "ACE_III"
+  const pruebasRaw = (r["Pruebas"] || "").trim();
+  const pruebas = pruebasRaw
+    ? pruebasRaw.split(",").map((p) => normalizePrueba(p.trim())).filter(Boolean)
+    : ["ACE_III"];
+  console.log("[Registro] Pruebas raw:", JSON.stringify(pruebasRaw), "→ normalized:", pruebas);
+
   return {
     id: r["ID Paciente"] || "",
     name: r["Nombre completo"] || "",
@@ -81,7 +101,8 @@ function parsePatient(headers: string[], row: string[]): Patient {
     interventionAreas: r["Áreas de intervención"] || r["Areas de intervencion"] || "",
     modality: r["Modalidad"] || "",
     familyContact: r["Familiar/Cuidador"] || "",
-    token: "", // Token ahora vive en Info_Familia
+    token: "", // Token vive en Info_Familia
+    pruebas,
   };
 }
 
@@ -146,6 +167,63 @@ function parseACEEvaluation(headers: string[], row: string[]): ACEEvaluation {
     comprensionOrdenes, escritura, repeticionPalabras, repeticionFrases, denominacion, lectura,
     conteoPuntos, identificarLetras, copiarDiagrama, copiarDibujo, reloj,
     totalACE, atencion, memoria, fluencia, lenguaje, visuoespacial,
+  };
+}
+
+function parseTamizaje(headers: string[], row: string[]): TamizajeEvaluation {
+  const r = rowToObject(headers, row);
+
+  const sospechaRaw = (r["Reloj_Sospecha_Deficit"] || "").toLowerCase();
+  const sospechaDeficit = sospechaRaw === "si" || sospechaRaw === "sí" || sospechaRaw === "true" || sospechaRaw === "1";
+
+  return {
+    evalId: r["EvalID"] || "",
+    fecha: r["Fecha"] || "",
+    examinador: r["Examinador"] || "",
+    io: {
+      nombre: parseNumber(r["IO_Nombre"]),
+      edad: parseNumber(r["IO_Edad"]),
+      fechaNacimiento: parseNumber(r["IO_Fecha_Nacimiento"]),
+      pais: parseNumber(r["IO_Pais"]),
+      provincia: parseNumber(r["IO_Provincia"]),
+      lugar: parseNumber(r["IO_Lugar"]),
+      presidenteAnterior: parseNumber(r["IO_Presidente_Anterior"]),
+      presidenteActual: parseNumber(r["IO_Presidente_Actual"]),
+      coloresBandera: parseNumber(r["IO_Colores_Bandera"]),
+      dia: parseNumber(r["IO_Dia"]),
+      mes: parseNumber(r["IO_Mes"]),
+      ano: parseNumber(r["IO_Ano"]),
+      total: parseNumber(r["IO_Total"]),
+    },
+    hm: {
+      contarPts: parseNumber(r["HM_Contar_Pts"]),
+      alfabetoPts: parseNumber(r["HM_Alfabeto_Pts"]),
+      escribirNombrePts: parseNumber(r["HM_Escribir_Nombre_Pts"]),
+      leerPts: parseNumber(r["HM_Leer_Pts"]),
+      total: parseNumber(r["HM_Total"]),
+    },
+    pm: {
+      laberintoPts: parseNumber(r["PM_Laberinto_Pts"]),
+    },
+    cas: {
+      total: parseNumber(r["CAS_Total"]),
+      clasificacion: r["CAS_Clasificacion"] || "",
+    },
+    lenguaje: {
+      visoVerbalLamina: parseNumber(r["LVV_Total_Lamina"]),
+      visoVerbalObjetos: parseNumber(r["LVV_Total_Objetos"]),
+      frutasTotal: parseNumber(r["LDV_Frutas_Total"]),
+      palabrasMTotal: parseNumber(r["LDV_Palabras_M_Total"]),
+      repeticionTotal: parseNumber(r["LR_Total"]),
+      comprensionTotal: parseNumber(r["LC_Total"]),
+    },
+    reloj: {
+      esfera: parseNumber(r["Reloj_Esfera"]),
+      numeros: parseNumber(r["Reloj_Numeros"]),
+      manecillas: parseNumber(r["Reloj_Manecillas"]),
+      total: parseNumber(r["Reloj_Total"]),
+      sospechaDeficit,
+    },
   };
 }
 
@@ -307,6 +385,7 @@ export async function getPatientByToken(
     if (!patientRow) return null;
 
     const patient = parsePatient(regHeaders, patientRow);
+    console.log("[Patient] ID:", patient.id, "| pruebas:", patient.pruebas);
 
     // ─── 3. Evaluaciones ACE-III ───
     const aceRows = allData["ACE_III"];
@@ -319,7 +398,49 @@ export async function getPatientByToken(
       .map((row) => parseACEEvaluation(aceHeaders, row))
       .sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
 
-    // ─── 4. Sesiones ───
+    console.log("[ACE_III] evaluations found for patient:", evaluations.length);
+
+    // ─── 4. Tamizaje Cognitivo (only if patient has this assessment) ───
+    let tamizaje: TamizajeEvaluation[] = [];
+    const hasTamizaje = patient.pruebas.includes("Tamizaje_Cognitivo");
+    console.log("[Tamizaje] patient.pruebas includes Tamizaje_Cognitivo:", hasTamizaje);
+
+    if (hasTamizaje) {
+      try {
+        const tamRows = await getSheetData("Tamizaje_Cognitivo");
+        console.log("[Tamizaje] sheet rows fetched:", tamRows?.length ?? 0);
+        const tamHeaders = getHeaders(tamRows, "Tamizaje_Cognitivo");
+        console.log("[Tamizaje] headers:", JSON.stringify(tamHeaders));
+        const tamDataRows = getDataRows(tamRows, "Tamizaje_Cognitivo");
+        console.log("[Tamizaje] data rows:", tamDataRows.length);
+        console.log("[Tamizaje] patientId to match:", JSON.stringify(patientId));
+
+        // Log the first row's parsed ID_Paciente field so we can see what the sheet actually has
+        if (tamDataRows.length > 0) {
+          const firstRow = rowToObject(tamHeaders, tamDataRows[0]);
+          console.log("[Tamizaje] first row ID_Paciente:", JSON.stringify(firstRow["ID_Paciente"]),
+            "| ID Paciente (space):", JSON.stringify(firstRow["ID Paciente"]));
+        }
+
+        // Use rowToObject for filtering — same approach used inside parseTamizaje,
+        // so trimming and key normalisation are applied consistently.
+        // Also accept "ID Paciente" (space) as a fallback header name.
+        tamizaje = tamDataRows
+          .filter((row) => {
+            const r = rowToObject(tamHeaders, row);
+            const rowId = (r["ID_Paciente"] || r["ID Paciente"] || "").trim();
+            return rowId === patientId;
+          })
+          .map((row) => parseTamizaje(tamHeaders, row))
+          .sort((a, b) => parseDate(a.fecha).getTime() - parseDate(b.fecha).getTime());
+
+        console.log("[Tamizaje] evaluations matched for patient:", tamizaje.length);
+      } catch (err) {
+        console.error("[Tamizaje] Error fetching Tamizaje_Cognitivo sheet:", err);
+      }
+    }
+
+    // ─── 5. Sesiones ───
     const sesRows = allData["Sesiones"];
     const sesHeaders = getHeaders(sesRows, "Sesiones");
     const sesDataRows = getDataRows(sesRows, "Sesiones");
@@ -330,7 +451,7 @@ export async function getPatientByToken(
       .map((row) => parseSession(sesHeaders, row))
       .sort((a, b) => a.sessionNumber - b.sessionNumber);
 
-    // ─── 5. Victorias (filtrar: Visible para familia = Si) ───
+    // ─── 6. Victorias (filtrar: Visible para familia = Si) ───
     const vicRows = allData["Victorias"];
     const vicHeaders = getHeaders(vicRows, "Victorias");
     const vicDataRows = getDataRows(vicRows, "Victorias");
@@ -345,7 +466,7 @@ export async function getPatientByToken(
       })
       .map((row) => parseVictory(vicHeaders, row));
 
-    // ─── 6. Recomendaciones (filtrar: Estado = Activa + Visible = Si) ───
+    // ─── 7. Recomendaciones (filtrar: Estado = Activa + Visible = Si) ───
     const recRows = allData["Recomendaciones"];
     const recHeaders = getHeaders(recRows, "Recomendaciones");
     const recDataRows = getDataRows(recRows, "Recomendaciones");
@@ -362,10 +483,10 @@ export async function getPatientByToken(
       })
       .map((row) => parseRecommendation(recHeaders, row));
 
-    // ─── 7. Calcular dominios ───
+    // ─── 8. Calcular dominios ───
     const domains = calculateDomains(evaluations);
 
-    // ─── 8. Guias ───
+    // ─── 9. Guias ───
     const guiasRows = allData["Guias"] || [];
     const guiasHeaders = getHeaders(guiasRows, "Guias");
     const guiasDataRows = getDataRows(guiasRows, "Guias");
@@ -383,6 +504,7 @@ export async function getPatientByToken(
       patient,
       familyInfo,
       evaluations,
+      tamizaje,
       sessions,
       victories,
       recommendations,

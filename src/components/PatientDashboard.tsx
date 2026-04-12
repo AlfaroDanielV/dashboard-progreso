@@ -8,6 +8,7 @@ import SesionesTab from "@/components/tabs/SesionesTab";
 import VictoriasTab from "@/components/tabs/VictoriasTab";
 import HogarTab from "@/components/tabs/HogarTab";
 import GuiasTab from "@/components/tabs/GuiasTab";
+import TamizajeTab from "@/components/tabs/TamizajeTab";
 import ChatBot from "@/components/ChatBot";
 import type { DashboardData } from "@/lib/types";
 
@@ -25,6 +26,15 @@ const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
       "La línea que sube muestra la puntuación general a lo largo del tiempo. Cada punto es una evaluación formal que realizamos. Mientras la línea suba, hay avance. Es la forma más directa de ver \"la dirección\" del proceso.",
       "La tarjeta verde destacada muestra el logro más reciente — algo concreto que su familiar logró y que demuestra progreso real. No es solo un número: es un momento de vida recuperada.",
       "Los 4 recuadros les dicen: cuántas sesiones llevan del total, la puntuación actual, cuántos puntos ha mejorado desde el inicio, y cuándo es la próxima cita.",
+    ],
+  },
+  tamizaje: {
+    title: '🧠 Tamizaje Cognitivo — "¿Cuál es el perfil cognitivo?"',
+    paragraphs: [
+      "Esta sección muestra los resultados del Tamizaje Cognitivo, una evaluación estandarizada que mide múltiples áreas cognitivas.",
+      "El puntaje CAS (de 0 a 35) resume el desempeño global. La clasificación indica el nivel de desempeño: desde A (sin deterioro) hasta E (deterioro muy severo).",
+      "La gráfica de radar muestra las 6 grandes áreas evaluadas como porcentaje de su máximo. Cuanto más se expande la figura, mejor el desempeño.",
+      "Las barras horizontales muestran el puntaje obtenido en cada subárea específica, para identificar fortalezas y áreas a trabajar.",
     ],
   },
   dominios: {
@@ -72,12 +82,69 @@ const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
   },
 };
 
+// Assessment labels
+const ASSESSMENT_LABELS: Record<string, string> = {
+  ACE_III: "ACE-III",
+  Tamizaje_Cognitivo: "Tamizaje Cognitivo",
+};
+
+// Normalize so "ACE-III", "ACE III", "ace_iii" all resolve the same way
+function normAssessment(s: string): string {
+  const low = s.toLowerCase().replace(/[-_\s]/g, "");
+  if (low.includes("ace")) return "ACE_III";
+  if (low.includes("tamizaje")) return "Tamizaje_Cognitivo";
+  return s;
+}
+
 export default function PatientDashboard({ data, patientContext }: Props) {
-  const [activeTab, setActiveTab] = useState("resumen");
+  const { patient, evaluations, sessions, victories, recommendations, domains, guides = [], tamizaje = [] } = data;
+  const firstName = patient.name.split(" ")[0];
+  const { familyInfo } = data;
+
+  // Normalize pruebas in case any value came through with alternate separators
+  const pruebas = (patient.pruebas ?? ["ACE_III"]).map(normAssessment);
+  const hasMultipleAssessments = pruebas.length > 1;
+
+  const [selectedAssessment, setSelectedAssessment] = useState<string>(
+    pruebas[0] || "ACE_III"
+  );
+
+  // Use normalized comparison — robust against "ACE-III" vs "ACE_III" etc.
+  const isACE = normAssessment(selectedAssessment) === "ACE_III";
+  const isTamizaje = normAssessment(selectedAssessment) === "Tamizaje_Cognitivo";
+
+  // Build sub-tab list:
+  //   ACE-III selected  → Resumen + Habilidades first, then shared tabs
+  //   Tamizaje selected → Evaluación first, then shared tabs
+  //   Unknown           → fall back to ACE tabs when evaluations exist
+  const showACETabs = isACE || (!isTamizaje && evaluations.length > 0);
+  const subTabs = [
+    ...(showACETabs ? [
+      { id: "resumen",  label: "Resumen",     icon: "✨" },
+      { id: "dominios", label: "Habilidades",  icon: "🧠" },
+    ] : []),
+    ...(isTamizaje ? [
+      { id: "tamizaje", label: "Evaluación", icon: "🧩" },
+    ] : []),
+    { id: "sesiones",  label: "Sesiones",  icon: "📝" },
+    { id: "victorias", label: "Victorias", icon: "🏆" },
+    { id: "hogar",     label: "En casa",   icon: "🏠" },
+    { id: "guias",     label: "Guías",     icon: "📚" },
+  ];
+
+  const defaultTab = showACETabs ? "resumen" : isTamizaje ? "tamizaje" : "sesiones";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const { patient, evaluations, sessions, victories, recommendations, domains, guides = [] } = data;
-  const firstName = patient.name.split(" ")[0];
+  // When switching assessments, jump to the first meaningful tab
+  function handleSelectAssessment(prueba: string) {
+    const norm = normAssessment(prueba);
+    setSelectedAssessment(norm);
+    setShowTooltip(false);
+    if (norm === "ACE_III") setActiveTab("resumen");
+    else if (norm === "Tamizaje_Cognitivo") setActiveTab("tamizaje");
+    else setActiveTab("sesiones");
+  }
 
   const totalChange =
     evaluations.length >= 2
@@ -89,19 +156,9 @@ export default function PatientDashboard({ data, patientContext }: Props) {
       ? evaluations[evaluations.length - 1].totalACE
       : 0;
 
-  const { familyInfo } = data;
-    const sessionPct = familyInfo.totalSessionsPlan > 0
+  const sessionPct = familyInfo.totalSessionsPlan > 0
     ? Math.round((familyInfo.sessionsCompleted / familyInfo.totalSessionsPlan) * 100)
     : 0;
-
-  const tabs = [
-    { id: "resumen", label: "Resumen", icon: "✨" },
-    { id: "dominios", label: "Habilidades", icon: "🧠" },
-    { id: "sesiones", label: "Sesiones", icon: "📝" },
-    { id: "victorias", label: "Victorias", icon: "🏆" },
-    { id: "hogar", label: "En casa", icon: "🏠" },
-    { id: "guias", label: "Guías", icon: "📚" },
-  ];
 
   return (
     <div
@@ -207,9 +264,9 @@ export default function PatientDashboard({ data, patientContext }: Props) {
               >
                 Sesiones
               </div>
-                <div style={{ fontSize: 22, fontWeight: 700 }}>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>
                 {familyInfo.sessionsCompleted}/{familyInfo.totalSessionsPlan}
-                </div>
+              </div>
               <div
                 style={{
                   height: 4,
@@ -229,7 +286,7 @@ export default function PatientDashboard({ data, patientContext }: Props) {
               </div>
             </div>
 
-            {evaluations.length > 0 && (
+            {evaluations.length > 0 && isACE && (
               <div
                 style={{
                   background: "rgba(255,255,255,0.15)",
@@ -246,22 +303,44 @@ export default function PatientDashboard({ data, patientContext }: Props) {
                     letterSpacing: 1,
                   }}
                 >
-                  Puntaje actual
+                  Puntaje ACE-III
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 700 }}>
                   {currentScore}/100
                 </div>
                 {evaluations.length > 1 && (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      opacity: 0.85,
-                      marginTop: 2,
-                    }}
-                  >
+                  <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>
                     +{totalChange} puntos desde el inicio
                   </div>
                 )}
+              </div>
+            )}
+
+            {tamizaje.length > 0 && isTamizaje && (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  borderRadius: 12,
+                  padding: "10px 16px",
+                  flex: "1 1 140px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    opacity: 0.75,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  CAS Tamizaje
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>
+                  {tamizaje[tamizaje.length - 1].cas.total}/35
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {tamizaje[tamizaje.length - 1].cas.clasificacion}
+                </div>
               </div>
             )}
 
@@ -273,23 +352,22 @@ export default function PatientDashboard({ data, patientContext }: Props) {
                 flex: "1 1 140px",
               }}
             >
-<div style={{ fontSize: 11, opacity: 0.75, textTransform: "uppercase", letterSpacing: 1 }}>
-  Próxima cita
-</div>
-<div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-  {familyInfo.nextSession || "Por confirmar"}
-</div>
+              <div style={{ fontSize: 11, opacity: 0.75, textTransform: "uppercase", letterSpacing: 1 }}>
+                Próxima cita
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+                {familyInfo.nextSession || "Por confirmar"}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Navigation */}
       <div
         style={{
           maxWidth: 600,
           margin: "0 auto",
-          padding: "0 16px",
           position: "sticky",
           top: 0,
           zIndex: 10,
@@ -297,29 +375,70 @@ export default function PatientDashboard({ data, patientContext }: Props) {
           borderBottom: "1px solid #EDE8E3",
         }}
       >
+        {/* Assessment selector — only show when patient has multiple assessments */}
+        {hasMultipleAssessments && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              justifyContent: "center",
+              padding: "12px 16px 0",
+            }}
+          >
+            {pruebas.map((prueba) => {
+              const isActive = normAssessment(selectedAssessment) === prueba;
+              return (
+                <button
+                  key={prueba}
+                  onClick={() => handleSelectAssessment(prueba)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    fontFamily: fonts.body,
+                    cursor: "pointer",
+                    border: `2px solid ${isActive ? colors.terracotta : colors.terracotta + "4D"}`,
+                    background: isActive ? colors.terracotta : "transparent",
+                    color: isActive ? "white" : colors.terracotta,
+                    transition: "all 0.2s ease",
+                    minWidth: 0,
+                    flex: "0 1 auto",
+                  }}
+                >
+                  {ASSESSMENT_LABELS[prueba] || prueba.replace(/_/g, " ")}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Sub-tabs */}
         <div
           style={{
             display: "flex",
-            gap: 4,
-            overflowX: "auto",
-            padding: "12px 0",
+            flexWrap: "wrap",
+            gap: 6,
+            justifyContent: "center",
+            padding: hasMultipleAssessments ? "8px 16px" : "12px 16px",
           }}
         >
-          {tabs.map((tab) => (
+          {subTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setShowTooltip(false); }}
               style={{
-                padding: "8px 16px",
-                borderRadius: 24,
+                padding: "6px 14px",
+                borderRadius: 16,
                 border: "none",
                 cursor: "pointer",
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
                 whiteSpace: "nowrap",
                 fontFamily: fonts.body,
-                background:
-                  activeTab === tab.id ? colors.terracotta : "transparent",
+                background: activeTab === tab.id ? colors.terracotta : "transparent",
                 color: activeTab === tab.id ? "white" : colors.muted,
                 transition: "all 0.2s ease",
               }}
@@ -356,7 +475,6 @@ export default function PatientDashboard({ data, patientContext }: Props) {
               overflowY: "auto",
             }}
           >
-            {/* Drag handle */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <div style={{ width: 40, height: 4, borderRadius: 4, background: "#D9D0C9" }} />
             </div>
@@ -416,28 +534,30 @@ export default function PatientDashboard({ data, patientContext }: Props) {
         }}
       >
         {/* Info button */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <button
-            onClick={() => setShowTooltip(true)}
-            title="¿Qué muestra esta sección?"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "5px 12px",
-              borderRadius: 20,
-              border: `1.5px solid ${colors.peach}`,
-              background: "white",
-              color: colors.terracotta,
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: fonts.body,
-              cursor: "pointer",
-            }}
-          >
-            <span style={{ fontSize: 14 }}>ℹ</span> ¿Qué es esto?
-          </button>
-        </div>
+        {TAB_TOOLTIPS[activeTab] && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <button
+              onClick={() => setShowTooltip(true)}
+              title="¿Qué muestra esta sección?"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 12px",
+                borderRadius: 20,
+                border: `1.5px solid ${colors.peach}`,
+                background: "white",
+                color: colors.terracotta,
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: fonts.body,
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 14 }}>ℹ</span> ¿Qué es esto?
+            </button>
+          </div>
+        )}
 
         {activeTab === "resumen" && (
           <ResumenTab
@@ -449,6 +569,12 @@ export default function PatientDashboard({ data, patientContext }: Props) {
         {activeTab === "dominios" && (
           <DominiosTab
             domains={domains}
+            patientFirstName={firstName}
+          />
+        )}
+        {activeTab === "tamizaje" && (
+          <TamizajeTab
+            tamizaje={tamizaje}
             patientFirstName={firstName}
           />
         )}
@@ -500,7 +626,7 @@ export default function PatientDashboard({ data, patientContext }: Props) {
         </div>
       </div>
 
-      <ChatBot patientContext={patientContext} patientName={patient.name} />
+      <ChatBot patientContext={patientContext} patientName={patient.name} pruebas={pruebas} />
     </div>
   );
 }

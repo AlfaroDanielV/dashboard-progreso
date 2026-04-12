@@ -19,6 +19,7 @@ import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { colors, fonts } from "@/config/brand";
 import type { ACEEvaluation, DomainProgress, Victory } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface Props {
   evaluations: ACEEvaluation[];
@@ -51,7 +52,7 @@ export default function ResumenTab({ evaluations, domains, victories }: Props) {
   // Line chart data
   const lineData = evaluations.map((ev) => ({
     name: ev.type,
-    date: ev.date,
+    date: formatDate(ev.date),
     total: ev.totalACE,
   }));
 
@@ -196,7 +197,7 @@ export default function ResumenTab({ evaluations, domains, victories }: Props) {
               marginTop: 8,
             }}
           >
-            {latestVictory.date} · {latestVictory.area}
+            {formatDate(latestVictory.date)} · {latestVictory.area}
           </div>
         </Card>
       )}

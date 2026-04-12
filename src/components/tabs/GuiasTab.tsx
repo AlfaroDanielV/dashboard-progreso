@@ -3,6 +3,7 @@ import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { colors, fonts } from "@/config/brand";
 import type { Guide } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface Props {
   guides: Guide[];
@@ -70,12 +71,8 @@ export default function GuiasTab({ guides }: Props) {
                 </div>
               )}
               {guia.fecha && (
-                <div style={{
-                  fontSize: 12, color: "#9CA3AF", marginTop: 4,
-                }}>
-                  {new Date(guia.fecha).toLocaleDateString("es-CR", {
-                    day: "numeric", month: "long", year: "numeric",
-                  })}
+                <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+                  {formatDate(guia.fecha)}
                 </div>
               )}
               {!hasUrl && (
