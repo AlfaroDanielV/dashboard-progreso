@@ -316,33 +316,45 @@ export default function PatientDashboard({ data, patientContext }: Props) {
               </div>
             )}
 
-            {tamizaje.length > 0 && isTamizaje && (
-              <div
-                style={{
-                  background: "rgba(255,255,255,0.15)",
-                  borderRadius: 12,
-                  padding: "10px 16px",
-                  flex: "1 1 140px",
-                }}
-              >
+            {tamizaje.length > 0 && isTamizaje && (() => {
+              const latestTam = tamizaje[0]; // sorted desc
+              const cas = latestTam.gradoDeterioroCognitivo;
+              let casLabel = "";
+              if (cas !== null) {
+                if (cas >= 30) casLabel = "Ausencia de deterioro";
+                else if (cas >= 24) casLabel = "Deterioro leve";
+                else if (cas >= 16) casLabel = "Deterioro moderado";
+                else if (cas >= 9) casLabel = "Deterioro acusado";
+                else casLabel = "Deterioro grave";
+              }
+              return (
                 <div
                   style={{
-                    fontSize: 11,
-                    opacity: 0.75,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
+                    background: "rgba(255,255,255,0.15)",
+                    borderRadius: 12,
+                    padding: "10px 16px",
+                    flex: "1 1 140px",
                   }}
                 >
-                  CAS Tamizaje
+                  <div
+                    style={{
+                      fontSize: 11,
+                      opacity: 0.75,
+                      textTransform: "uppercase",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    CAS Tamizaje
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>
+                    {cas ?? "—"}/35
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {casLabel}
+                  </div>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700 }}>
-                  {tamizaje[tamizaje.length - 1].cas.total}/35
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {tamizaje[tamizaje.length - 1].cas.clasificacion}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div
               style={{

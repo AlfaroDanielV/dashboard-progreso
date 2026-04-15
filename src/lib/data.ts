@@ -170,60 +170,60 @@ function parseACEEvaluation(headers: string[], row: string[]): ACEEvaluation {
   };
 }
 
+function parseNumberOrNull(val: string | undefined): number | null {
+  if (!val || val.trim() === "") return null;
+  const n = Number(val.replace(",", "."));
+  return isNaN(n) ? null : n;
+}
+
 function parseTamizaje(headers: string[], row: string[]): TamizajeEvaluation {
   const r = rowToObject(headers, row);
 
-  const sospechaRaw = (r["Reloj_Sospecha_Deficit"] || "").toLowerCase();
-  const sospechaDeficit = sospechaRaw === "si" || sospechaRaw === "sí" || sospechaRaw === "true" || sospechaRaw === "1";
+  // Detect format: if "IO_Total" column exists → old granular format; otherwise → new simplified
+  const isOldFormat = r["IO_Total"] !== undefined && r["IO_Total"] !== "";
 
+  if (isOldFormat) {
+    // Old format: compute simplified values from granular columns
+    const ioTotal = parseNumber(r["IO_Total"]);
+    const hmTotal = parseNumber(r["HM_Total"]);
+    const pmPts = parseNumber(r["PM_Laberinto_Pts"]);
+    const casTotal = parseNumber(r["CAS_Total"]);
+    const denomLamina = parseNumber(r["LVV_Total_Lamina"]);
+    const denomObjetos = parseNumber(r["LVV_Total_Objetos"]);
+    const repeticionTotal = parseNumber(r["LR_Total"]);
+    const comprensionTotal = parseNumber(r["LC_Total"]);
+    const relojTotal = parseNumber(r["Reloj_Total"]);
+
+    return {
+      evalId: r["EvalID"] || "",
+      fecha: r["Fecha"] || "",
+      examinador: r["Examinador"] || "",
+      informacionOrientacion: ioTotal || null,
+      habilidadMental: hmTotal || null,
+      psicomotricidad: pmPts || null,
+      gradoDeterioroCognitivo: casTotal || null,
+      denominacion: (denomLamina + denomObjetos) || null,
+      repeticion: repeticionTotal || null,
+      comprension: comprensionTotal || null,
+      dibujoReloj: relojTotal || null,
+      observaciones: r["Observaciones"] || "",
+    };
+  }
+
+  // New simplified format: columns match directly
   return {
     evalId: r["EvalID"] || "",
     fecha: r["Fecha"] || "",
     examinador: r["Examinador"] || "",
-    io: {
-      nombre: parseNumber(r["IO_Nombre"]),
-      edad: parseNumber(r["IO_Edad"]),
-      fechaNacimiento: parseNumber(r["IO_Fecha_Nacimiento"]),
-      pais: parseNumber(r["IO_Pais"]),
-      provincia: parseNumber(r["IO_Provincia"]),
-      lugar: parseNumber(r["IO_Lugar"]),
-      presidenteAnterior: parseNumber(r["IO_Presidente_Anterior"]),
-      presidenteActual: parseNumber(r["IO_Presidente_Actual"]),
-      coloresBandera: parseNumber(r["IO_Colores_Bandera"]),
-      dia: parseNumber(r["IO_Dia"]),
-      mes: parseNumber(r["IO_Mes"]),
-      ano: parseNumber(r["IO_Ano"]),
-      total: parseNumber(r["IO_Total"]),
-    },
-    hm: {
-      contarPts: parseNumber(r["HM_Contar_Pts"]),
-      alfabetoPts: parseNumber(r["HM_Alfabeto_Pts"]),
-      escribirNombrePts: parseNumber(r["HM_Escribir_Nombre_Pts"]),
-      leerPts: parseNumber(r["HM_Leer_Pts"]),
-      total: parseNumber(r["HM_Total"]),
-    },
-    pm: {
-      laberintoPts: parseNumber(r["PM_Laberinto_Pts"]),
-    },
-    cas: {
-      total: parseNumber(r["CAS_Total"]),
-      clasificacion: r["CAS_Clasificacion"] || "",
-    },
-    lenguaje: {
-      visoVerbalLamina: parseNumber(r["LVV_Total_Lamina"]),
-      visoVerbalObjetos: parseNumber(r["LVV_Total_Objetos"]),
-      frutasTotal: parseNumber(r["LDV_Frutas_Total"]),
-      palabrasMTotal: parseNumber(r["LDV_Palabras_M_Total"]),
-      repeticionTotal: parseNumber(r["LR_Total"]),
-      comprensionTotal: parseNumber(r["LC_Total"]),
-    },
-    reloj: {
-      esfera: parseNumber(r["Reloj_Esfera"]),
-      numeros: parseNumber(r["Reloj_Numeros"]),
-      manecillas: parseNumber(r["Reloj_Manecillas"]),
-      total: parseNumber(r["Reloj_Total"]),
-      sospechaDeficit,
-    },
+    informacionOrientacion: parseNumberOrNull(r["Informacion-orientacion"]),
+    habilidadMental: parseNumberOrNull(r["Habilidad mental"]),
+    psicomotricidad: parseNumberOrNull(r["Psicomotricidad"]),
+    gradoDeterioroCognitivo: parseNumberOrNull(r["Grado de deterioro cognitivo"]),
+    denominacion: parseNumberOrNull(r["Denominacion"]),
+    repeticion: parseNumberOrNull(r["Repeticion"]),
+    comprension: parseNumberOrNull(r["Comprension"]),
+    dibujoReloj: parseNumberOrNull(r["Dibujo del reloj"]),
+    observaciones: r["Observaciones"] || "",
   };
 }
 
@@ -415,24 +415,26 @@ export async function getPatientByToken(
         console.log("[Tamizaje] data rows:", tamDataRows.length);
         console.log("[Tamizaje] patientId to match:", JSON.stringify(patientId));
 
-        // Log the first row's parsed ID_Paciente field so we can see what the sheet actually has
+        // Debug: log first row IDs to diagnose matching
         if (tamDataRows.length > 0) {
           const firstRow = rowToObject(tamHeaders, tamDataRows[0]);
-          console.log("[Tamizaje] first row ID_Paciente:", JSON.stringify(firstRow["ID_Paciente"]),
-            "| ID Paciente (space):", JSON.stringify(firstRow["ID Paciente"]));
+          console.log("[Tamizaje] first row ID Paciente:", JSON.stringify(firstRow["ID Paciente"]),
+            "| ID_Paciente:", JSON.stringify(firstRow["ID_Paciente"]));
         }
 
-        // Use rowToObject for filtering — same approach used inside parseTamizaje,
-        // so trimming and key normalisation are applied consistently.
-        // Also accept "ID Paciente" (space) as a fallback header name.
+        // Normalize IDs: strip ".0" suffix that Sheets may add to numeric IDs
+        const normalizeId = (id: string) => id.trim().replace(/\.0$/, "");
+        const normalizedPatientId = normalizeId(patientId);
+
+        // Filter rows by patient ID — accept both "ID Paciente" (space) and "ID_Paciente" (underscore)
         tamizaje = tamDataRows
           .filter((row) => {
             const r = rowToObject(tamHeaders, row);
-            const rowId = (r["ID_Paciente"] || r["ID Paciente"] || "").trim();
-            return rowId === patientId;
+            const rowId = normalizeId(r["ID Paciente"] || r["ID_Paciente"] || "");
+            return rowId === normalizedPatientId;
           })
           .map((row) => parseTamizaje(tamHeaders, row))
-          .sort((a, b) => parseDate(a.fecha).getTime() - parseDate(b.fecha).getTime());
+          .sort((a, b) => parseDate(b.fecha).getTime() - parseDate(a.fecha).getTime()); // desc: most recent first
 
         console.log("[Tamizaje] evaluations matched for patient:", tamizaje.length);
       } catch (err) {

@@ -64,56 +64,15 @@ export interface TamizajeEvaluation {
   evalId: string;
   fecha: string;
   examinador: string;
-  // Sección 1: Orientación e Información
-  io: {
-    nombre: number;
-    edad: number;
-    fechaNacimiento: number;
-    pais: number;
-    provincia: number;
-    lugar: number;
-    presidenteAnterior: number;
-    presidenteActual: number;
-    coloresBandera: number;
-    dia: number;
-    mes: number;
-    ano: number;
-    total: number; // /12
-  };
-  // Sección 2: Habilidad Mental
-  hm: {
-    contarPts: number;
-    alfabetoPts: number;
-    escribirNombrePts: number;
-    leerPts: number;
-    total: number; // /11
-  };
-  // Sección 3: Psicomotricidad
-  pm: {
-    laberintoPts: number;
-  };
-  // CAS: Escala de Deterioro
-  cas: {
-    total: number; // /35
-    clasificacion: string; // "A - Ausencia de deterioro", etc.
-  };
-  // Lenguaje
-  lenguaje: {
-    visoVerbalLamina: number; // /8
-    visoVerbalObjetos: number; // /8
-    frutasTotal: number;
-    palabrasMTotal: number;
-    repeticionTotal: number; // /4
-    comprensionTotal: number; // /5
-  };
-  // Reloj
-  reloj: {
-    esfera: number;
-    numeros: number;
-    manecillas: number;
-    total: number; // /10
-    sospechaDeficit: boolean;
-  };
+  informacionOrientacion: number | null;
+  habilidadMental: number | null;
+  psicomotricidad: number | null;
+  gradoDeterioroCognitivo: number | null;  // CAS Total /35
+  denominacion: number | null;
+  repeticion: number | null;
+  comprension: number | null;
+  dibujoReloj: number | null;
+  observaciones: string;
 }
 
 export interface Session {

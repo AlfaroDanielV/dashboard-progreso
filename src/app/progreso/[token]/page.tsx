@@ -34,12 +34,32 @@ function buildPatientContext(data: DashboardData): string {
   }
 
   if (tamizaje && tamizaje.length > 0) {
-    const t = tamizaje[tamizaje.length - 1];
-    context += `TAMIZAJE COGNITIVO (CAS/NEUROPSI) — Evaluación del ${t.fecha}:\n`;
-    context += `CAS Total: ${t.cas.total}/35 — Clasificación: ${t.cas.clasificacion}\n`;
-    context += `Orientación: ${t.io.total}/12, Habilidad Mental: ${t.hm.total}/11, Psicomotricidad: ${t.pm.laberintoPts}/12\n`;
-    context += `Lenguaje: Denominación Visual ${t.lenguaje.visoVerbalLamina + t.lenguaje.visoVerbalObjetos}/16, Fluencia Verbal (Frutas: ${t.lenguaje.frutasTotal}, Palabras M: ${t.lenguaje.palabrasMTotal}), Repetición ${t.lenguaje.repeticionTotal}/4, Comprensión ${t.lenguaje.comprensionTotal}/5\n`;
-    context += `Reloj: ${t.reloj.total}/10 (Sospecha déficit: ${t.reloj.sospechaDeficit ? "Sí" : "No"})\n\n`;
+    const latest = tamizaje[0]; // sorted by date desc
+    context += `\nTAMIZAJE COGNITIVO (evaluacion mas reciente: ${latest.fecha}):\n`;
+    context += `Informacion/Orientacion: ${latest.informacionOrientacion ?? "N/A"}\n`;
+    context += `Habilidad Mental: ${latest.habilidadMental ?? "N/A"}\n`;
+    context += `Psicomotricidad: ${latest.psicomotricidad ?? "N/A"}\n`;
+    context += `Grado de deterioro cognitivo (CAS Total): ${latest.gradoDeterioroCognitivo ?? "N/A"}/35\n`;
+
+    const cas = latest.gradoDeterioroCognitivo;
+    if (cas !== null && cas !== undefined) {
+      let clasificacion = "";
+      if (cas >= 30) clasificacion = "A — Ausencia de deterioro";
+      else if (cas >= 24) clasificacion = "B — Deterioro leve";
+      else if (cas >= 16) clasificacion = "C — Deterioro moderado";
+      else if (cas >= 9) clasificacion = "D — Deterioro acusado";
+      else clasificacion = "E — Deterioro grave";
+      context += `Clasificacion: ${clasificacion}\n`;
+    }
+
+    context += `Denominacion: ${latest.denominacion ?? "N/A"}\n`;
+    context += `Repeticion: ${latest.repeticion ?? "N/A"}\n`;
+    context += `Comprension: ${latest.comprension ?? "N/A"}\n`;
+    context += `Dibujo del reloj: ${latest.dibujoReloj ?? "N/A"}\n`;
+    if (latest.observaciones) {
+      context += `Observaciones: ${latest.observaciones}\n`;
+    }
+    context += "\n";
   }
 
   if (sessions.length > 0) {
