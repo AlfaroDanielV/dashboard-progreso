@@ -84,7 +84,7 @@ const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
 
 // Assessment labels
 const ASSESSMENT_LABELS: Record<string, string> = {
-  ACE_III: "ACE-III",
+  ACE_III: "Evolución",
   Tamizaje_Cognitivo: "Tamizaje Cognitivo",
 };
 
