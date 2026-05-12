@@ -77,7 +77,7 @@ export default function GuiasTab({ guides }: Props) {
               )}
               {!hasUrl && (
                 <div style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
-                  Archivo no disponible aún
+                Archivo no disponible aún
                 </div>
               )}
             </div>

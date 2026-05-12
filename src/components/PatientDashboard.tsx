@@ -32,7 +32,7 @@ const TAB_TOOLTIPS: Record<string, { title: string; paragraphs: string[] }> = {
     title: '🧠 Tamizaje Cognitivo — "¿Cuál es el perfil cognitivo?"',
     paragraphs: [
       "Esta sección muestra los resultados del Tamizaje Cognitivo, una evaluación estandarizada que mide múltiples áreas cognitivas.",
-      "El puntaje CAS (de 0 a 35) resume el desempeño global. La clasificación indica el nivel de desempeño: desde A (sin deterioro) hasta E (deterioro muy severo).",
+      "El puntaje del tamizaje cognitivo (de 0 a 35) resume el desempeño global. La clasificación indica el nivel de desempeño: desde A (sin deterioro) hasta E (deterioro muy severo).",
       "La gráfica de radar muestra las 6 grandes áreas evaluadas como porcentaje de su máximo. Cuanto más se expande la figura, mejor el desempeño.",
       "Las barras horizontales muestran el puntaje obtenido en cada subárea específica, para identificar fortalezas y áreas a trabajar.",
     ],
@@ -104,9 +104,13 @@ export default function PatientDashboard({ data, patientContext }: Props) {
   // Normalize pruebas in case any value came through with alternate separators
   const pruebas = (patient.pruebas ?? ["ACE_III"]).map(normAssessment);
   const hasMultipleAssessments = pruebas.length > 1;
+  const preferredAssessment =
+    pruebas.includes("Tamizaje_Cognitivo")
+      ? "Tamizaje_Cognitivo"
+      : pruebas[0] || "ACE_III";
 
   const [selectedAssessment, setSelectedAssessment] = useState<string>(
-    pruebas[0] || "ACE_III"
+    preferredAssessment
   );
 
   // Use normalized comparison — robust against "ACE-III" vs "ACE_III" etc.
@@ -132,7 +136,11 @@ export default function PatientDashboard({ data, patientContext }: Props) {
     { id: "guias",     label: "Guías",     icon: "📚" },
   ];
 
-  const defaultTab = showACETabs ? "resumen" : isTamizaje ? "tamizaje" : "sesiones";
+  const defaultTab = isTamizaje
+    ? "tamizaje"
+    : showACETabs
+      ? "resumen"
+      : "sesiones";
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -344,7 +352,7 @@ export default function PatientDashboard({ data, patientContext }: Props) {
                       letterSpacing: 1,
                     }}
                   >
-                    CAS Tamizaje
+                    Tamizaje Cognitivo
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>
                     {cas ?? "—"}/35
@@ -398,7 +406,11 @@ export default function PatientDashboard({ data, patientContext }: Props) {
               padding: "12px 16px 0",
             }}
           >
-            {pruebas.map((prueba) => {
+            {[...pruebas].sort((a, b) => {
+              if (a === "Tamizaje_Cognitivo" && b !== "Tamizaje_Cognitivo") return -1;
+              if (b === "Tamizaje_Cognitivo" && a !== "Tamizaje_Cognitivo") return 1;
+              return 0;
+            }).map((prueba) => {
               const isActive = normAssessment(selectedAssessment) === prueba;
               return (
                 <button

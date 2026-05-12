@@ -21,6 +21,7 @@ export interface Patient {
 
 export interface ACEEvaluation {
   patientId: string;
+  idACE: string;
   date: string;
   type: string;
   // Atención (max 18)
@@ -43,6 +44,7 @@ export interface ACEEvaluation {
   repeticionPalabras: number;
   repeticionFrases: number;
   denominacion: number;
+  asociacion: number;
   lectura: number;
   // Visuoespacial (max 16)
   conteoPuntos: number;

@@ -21,6 +21,7 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +34,15 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const sync = () => setIsMobile(mq.matches);
+
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const firstName = patientName.split(" ")[0];
 
@@ -48,7 +58,7 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
       "¿Qué significa su puntaje en atención?",
     ] : []),
     ...(hasTamizaje ? [
-      `¿Qué significa la clasificación CAS de ${firstName}?`,
+      `¿Qué significa el resultado del tamizaje cognitivo de ${firstName}?`,
       `¿Qué tan bien le fue a ${firstName} en Habilidad Mental?`,
       `¿Qué significa el resultado del reloj?`,
     ] : []),
@@ -116,10 +126,10 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
         aria-label="Abrir chat"
         style={{
           position: "fixed",
-          bottom: 24,
-          right: 24,
-          width: 60,
-          height: 60,
+          bottom: isMobile ? 16 : 24,
+          right: isMobile ? 16 : 24,
+          width: isMobile ? 52 : 60,
+          height: isMobile ? 52 : 60,
           borderRadius: "50%",
           background: `linear-gradient(135deg, ${colors.terracotta}, ${colors.sage})`,
           border: "none",
@@ -151,13 +161,12 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
     <div
       style={{
         position: "fixed",
-        bottom: 24,
-        right: 24,
-        width: 380,
-        maxWidth: "calc(100vw - 48px)",
-        height: 520,
-        maxHeight: "calc(100vh - 48px)",
-        borderRadius: 20,
+        inset: isMobile ? "12px" : "auto 24px 24px auto",
+        width: isMobile ? "calc(100vw - 24px)" : 380,
+        maxWidth: isMobile ? "calc(100vw - 24px)" : "calc(100vw - 48px)",
+        height: isMobile ? "calc(100vh - 24px)" : 520,
+        maxHeight: isMobile ? "calc(100vh - 24px)" : "calc(100vh - 48px)",
+        borderRadius: isMobile ? 16 : 20,
         background: "white",
         boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
         display: "flex",
@@ -171,17 +180,17 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
       <div
         style={{
           background: `linear-gradient(135deg, ${colors.terracotta}, ${colors.sage})`,
-          padding: "16px 20px",
+          padding: isMobile ? "12px 14px" : "16px 20px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
         <div>
-          <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>
+          <div style={{ color: "white", fontWeight: 700, fontSize: isMobile ? 15 : 16 }}>
             Asistente de progreso
           </div>
-          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 2 }}>
+          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: isMobile ? 11 : 12, marginTop: 2 }}>
             Pregunte sobre el avance de {firstName}
           </div>
         </div>
@@ -211,10 +220,10 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: 16,
+          padding: isMobile ? 12 : 16,
           display: "flex",
           flexDirection: "column",
-          gap: 12,
+          gap: isMobile ? 10 : 12,
           background: colors.cream,
         }}
       >
@@ -223,12 +232,12 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
             style={{
               textAlign: "center",
               color: colors.muted,
-              fontSize: 14,
-              padding: "32px 16px",
+              fontSize: isMobile ? 13 : 14,
+              padding: isMobile ? "20px 12px" : "32px 16px",
               lineHeight: 1.6,
             }}
           >
-            <div style={{ fontSize: 32, marginBottom: 12 }}></div>
+            <div style={{ fontSize: isMobile ? 28 : 32, marginBottom: 12 }}></div>
             ¡Hola! Soy el asistente de Terapia del Lenguaje. Puede preguntarme
             sobre el progreso de {firstName} — por ejemplo:
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -244,7 +253,7 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
                     border: "1px solid #E5E7EB",
                     borderRadius: 12,
                     padding: "8px 14px",
-                    fontSize: 13,
+                    fontSize: isMobile ? 14 : 13,
                     color: colors.terracotta,
                     cursor: "pointer",
                     textAlign: "left",
@@ -269,15 +278,15 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
             key={i}
             style={{
               alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-              maxWidth: "80%",
-              padding: "10px 14px",
+              maxWidth: isMobile ? "92%" : "80%",
+              padding: isMobile ? "9px 12px" : "10px 14px",
               borderRadius:
                 msg.role === "user"
                   ? "16px 16px 4px 16px"
                   : "16px 16px 16px 4px",
               background: msg.role === "user" ? colors.terracotta : "white",
               color: msg.role === "user" ? "white" : colors.dark,
-              fontSize: 14,
+              fontSize: isMobile ? 15 : 14,
               lineHeight: 1.5,
               boxShadow:
                 msg.role === "assistant"
@@ -294,9 +303,9 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
             style={{
               alignSelf: "flex-start",
               background: "white",
-              padding: "10px 14px",
+              padding: isMobile ? "9px 12px" : "10px 14px",
               borderRadius: "16px 16px 16px 4px",
-              fontSize: 14,
+              fontSize: isMobile ? 15 : 14,
               color: colors.muted,
               boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
             }}
@@ -310,7 +319,7 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
       {/* Input */}
       <div
         style={{
-          padding: "12px 16px",
+          padding: isMobile ? "10px 12px" : "12px 16px",
           borderTop: "1px solid #E5E7EB",
           display: "flex",
           gap: 8,
@@ -334,11 +343,12 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
             flex: 1,
             border: "1px solid #E5E7EB",
             borderRadius: 12,
-            padding: "10px 14px",
-            fontSize: 14,
+            padding: isMobile ? "12px 12px" : "10px 14px",
+            fontSize: 16,
             outline: "none",
             fontFamily: fonts.body,
             transition: "border-color 0.2s",
+            minHeight: 44,
           }}
           onFocus={(e) =>
             (e.currentTarget.style.borderColor = colors.terracotta)
@@ -355,8 +365,8 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
             color: "white",
             border: "none",
             borderRadius: 12,
-            width: 44,
-            height: 44,
+            width: isMobile ? 46 : 44,
+            height: isMobile ? 46 : 44,
             cursor: isLoading || !input.trim() ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
@@ -373,9 +383,9 @@ export default function ChatBot({ patientContext, patientName, pruebas = [] }: P
       {/* Footer */}
       <div
         style={{
-          padding: "6px 16px 10px",
+          padding: isMobile ? "4px 12px 8px" : "6px 16px 10px",
           textAlign: "center",
-          fontSize: 11,
+          fontSize: isMobile ? 10 : 11,
           color: "#C0B8B0",
           background: "white",
         }}

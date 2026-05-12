@@ -51,7 +51,7 @@ export async function buildDriveFileMap(
 export async function getSheetData(sheetName: string): Promise<string[][]> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${API_KEY}`;
 
-  const response = await fetch(url, { next: { revalidate: 60 } });
+  const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
     console.error(`Error fetching sheet ${sheetName}:`, response.statusText);

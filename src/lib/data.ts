@@ -142,6 +142,7 @@ function parseACEEvaluation(headers: string[], row: string[]): ACEEvaluation {
   const repeticionPalabras = parseNumber(r["Repetición palabras"] || r["Repeticion palabras"]);
   const repeticionFrases = parseNumber(r["Repetición frases"] || r["Repeticion frases"]);
   const denominacion = parseNumber(r["Denominación"] || r["Denominacion"]);
+  const asociacion = parseNumber(r["Asociación"] || r["Asociacion"]);
   const lectura = parseNumber(r["Lectura"]);
 
   const conteoPuntos = parseNumber(r["Conteo puntos"]);
@@ -153,18 +154,23 @@ function parseACEEvaluation(headers: string[], row: string[]): ACEEvaluation {
   const atencion = orientacionTemporal + orientacionEspacial + registro3Palabras + sustraccionSerial;
   const memoria = recuerdo3Palabras + nombreDireccionAprendizaje + personajesFamosos + recuerdoNombreDireccion + reconocimiento;
   const fluencia = formalLetraP + categorialAnimales;
-  const lenguaje = comprensionOrdenes + escritura + repeticionPalabras + repeticionFrases + denominacion + lectura;
+  const lenguaje = comprensionOrdenes + escritura + repeticionPalabras + repeticionFrases + denominacion + asociacion + lectura;
   const visuoespacial = conteoPuntos + identificarLetras + copiarDiagrama + copiarDibujo + reloj;
-  const totalACE = atencion + memoria + fluencia + lenguaje + visuoespacial;
+  const computedTotalACE = atencion + memoria + fluencia + lenguaje + visuoespacial;
+  const sheetTotalACE = parseNumberOrNull(
+    r["TOTAL ACE-III"] || r["TOTAL ACE III"] || r["Total ACE-III"] || r["Total ACE III"]
+  );
+  const totalACE = sheetTotalACE ?? computedTotalACE;
 
   return {
     patientId: r["ID Paciente"] || "",
+    idACE: r["ID ACE"] || "",
     date: r["Fecha evaluación"] || r["Fecha evaluacion"] || "",
     type: r["Tipo"] || "",
     orientacionTemporal, orientacionEspacial, registro3Palabras, sustraccionSerial,
     recuerdo3Palabras, nombreDireccionAprendizaje, personajesFamosos, recuerdoNombreDireccion, reconocimiento,
     formalLetraP, categorialAnimales,
-    comprensionOrdenes, escritura, repeticionPalabras, repeticionFrases, denominacion, lectura,
+    comprensionOrdenes, escritura, repeticionPalabras, repeticionFrases, denominacion, asociacion, lectura,
     conteoPuntos, identificarLetras, copiarDiagrama, copiarDibujo, reloj,
     totalACE, atencion, memoria, fluencia, lenguaje, visuoespacial,
   };

@@ -8,7 +8,7 @@ interface PageProps {
   params: { token: string };
 }
 
-export const revalidate = 60; // ISR: revalidar cada 60 segundos
+export const dynamic = "force-dynamic";
 
 function buildPatientContext(data: DashboardData): string {
   const { patient, evaluations, tamizaje, sessions, victories, recommendations, domains, guides } = data;
@@ -35,9 +35,9 @@ function buildPatientContext(data: DashboardData): string {
 
   if (tamizaje && tamizaje.length > 0) {
     const latest = tamizaje[0]; // sorted by date desc
-    context += `\nTAMIZAJE COGNITIVO (evaluacion mas reciente: ${latest.fecha}):\n`;
-    context += `Informacion/Orientacion: ${latest.informacionOrientacion ?? "N/A"}\n`;
-    context += `Habilidad Mental: ${latest.habilidadMental ?? "N/A"}\n`;
+    context += `\nTAMIZAJE COGNITIVO (evaluación más reciente: ${latest.fecha}):\n`;
+    context += `Información/Orientación: ${latest.informacionOrientacion ?? "N/A"}\n`;
+    context += `Habilidad mental: ${latest.habilidadMental ?? "N/A"}\n`;
     context += `Psicomotricidad: ${latest.psicomotricidad ?? "N/A"}\n`;
     context += `Grado de deterioro cognitivo (CAS Total): ${latest.gradoDeterioroCognitivo ?? "N/A"}/35\n`;
 
@@ -49,12 +49,12 @@ function buildPatientContext(data: DashboardData): string {
       else if (cas >= 16) clasificacion = "C — Deterioro moderado";
       else if (cas >= 9) clasificacion = "D — Deterioro acusado";
       else clasificacion = "E — Deterioro grave";
-      context += `Clasificacion: ${clasificacion}\n`;
+      context += `Clasificación: ${clasificacion}\n`;
     }
 
-    context += `Denominacion: ${latest.denominacion ?? "N/A"}\n`;
-    context += `Repeticion: ${latest.repeticion ?? "N/A"}\n`;
-    context += `Comprension: ${latest.comprension ?? "N/A"}\n`;
+    context += `Denominación: ${latest.denominacion ?? "N/A"}\n`;
+    context += `Repetición: ${latest.repeticion ?? "N/A"}\n`;
+    context += `Comprensión: ${latest.comprension ?? "N/A"}\n`;
     context += `Dibujo del reloj: ${latest.dibujoReloj ?? "N/A"}\n`;
     if (latest.observaciones) {
       context += `Observaciones: ${latest.observaciones}\n`;

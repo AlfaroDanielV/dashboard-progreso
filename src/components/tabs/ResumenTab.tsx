@@ -127,7 +127,7 @@ export default function ResumenTab({ evaluations, domains, victories }: Props) {
         <SectionTitle
           icon="📈"
           title="Evolución general"
-          subtitle="Puntaje total ACE-III a lo largo del tiempo"
+          subtitle="Puntaje total de evolución a lo largo del tiempo"
         />
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={lineData}>

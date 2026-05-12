@@ -13,12 +13,13 @@ import {
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { colors, fonts } from "@/config/brand";
-import type { TamizajeEvaluation } from "@/lib/types";
+import type { ACEEvaluation, TamizajeEvaluation } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 interface Props {
   tamizaje: TamizajeEvaluation[];
   patientFirstName: string;
+  latestACE?: ACEEvaluation | null;
 }
 
 // CAS classification from score
@@ -42,7 +43,7 @@ function v(n: number | null): number {
 function buildRadarData(ev: TamizajeEvaluation) {
   return [
     {
-      area: "Info./Orientacion",
+      area: "Info./Orientación",
       valor: Math.min(Math.round((v(ev.informacionOrientacion) / 12) * 100), 100),
       score: v(ev.informacionOrientacion),
       max: 12,
@@ -56,7 +57,7 @@ function buildRadarData(ev: TamizajeEvaluation) {
       fullMark: 100,
     },
     {
-      area: "Psicomotricidad",
+      area: "P.motricidad",
       valor: Math.min(Math.round((v(ev.psicomotricidad) / 12) * 100), 100),
       score: v(ev.psicomotricidad),
       max: 12,
@@ -66,16 +67,28 @@ function buildRadarData(ev: TamizajeEvaluation) {
 }
 
 // All 7 scored sections with max scores
-function buildBarData(ev: TamizajeEvaluation) {
-  return [
-    { name: "Info./Orientacion", score: v(ev.informacionOrientacion), max: 12 },
+function buildBarData(ev: TamizajeEvaluation, latestACE?: ACEEvaluation | null) {
+  const bars = [
+    { name: "Info./Orientación", score: v(ev.informacionOrientacion), max: 12 },
     { name: "Hab. Mental", score: v(ev.habilidadMental), max: 11 },
     { name: "Psicomotricidad", score: v(ev.psicomotricidad), max: 12 },
-    { name: "Denominacion", score: v(ev.denominacion), max: 8 },
-    { name: "Repeticion", score: v(ev.repeticion), max: 4 },
-    { name: "Comprension", score: v(ev.comprension), max: 5 },
+    { name: "Denominación", score: v(ev.denominacion), max: 8 },
+    { name: "Repetición", score: v(ev.repeticion), max: 4 },
+    { name: "Comprensión", score: v(ev.comprension), max: 5 },
     { name: "Dibujo del reloj", score: v(ev.dibujoReloj), max: 10 },
   ];
+
+  if (latestACE) {
+    bars.push(
+      { name: "Atención", score: latestACE.atencion, max: 18 },
+      { name: "Memoria", score: latestACE.memoria, max: 26 },
+      { name: "Fluencia", score: latestACE.fluencia, max: 14 },
+      { name: "Lenguaje", score: latestACE.lenguaje, max: 26 },
+      { name: "Visuoespacial", score: latestACE.visuoespacial, max: 16 }
+    );
+  }
+
+  return bars;
 }
 
 // Radar tooltip
@@ -91,13 +104,13 @@ function RadarTooltipContent({ active, payload }: { active?: boolean; payload?: 
 }
 
 
-export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
+export default function TamizajeTab({ tamizaje, patientFirstName, latestACE }: Props) {
   if (tamizaje.length === 0) {
     return (
       <Card>
         <p style={{ color: colors.muted, textAlign: "center" }}>
-          Aun no hay evaluaciones de Tamizaje Cognitivo registradas. Los datos
-          apareceran aqui despues de la primera evaluacion.
+          Aún no hay evaluaciones de Tamizaje Cognitivo registradas. Los datos
+          aparecerán aquí después de la primera evaluación.
         </p>
       </Card>
     );
@@ -107,7 +120,7 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
   const ev = tamizaje[0];
   const cas = casClassify(ev.gradoDeterioroCognitivo);
   const radarData = buildRadarData(ev);
-  const barData = buildBarData(ev);
+  const barData = buildBarData(ev, latestACE);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -115,13 +128,13 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
       {/* Header */}
       <SectionTitle
         icon="🧩"
-        title={`Evaluacion cognitiva de ${patientFirstName}`}
-        subtitle="Resultados del Tamizaje Cognitivo (Escala CAS + NEUROPSI)"
+        title={`Evaluación cognitiva de ${patientFirstName}`}
+        subtitle="Resultados del Tamizaje Cognitivo."
       />
 
       {tamizaje.length > 1 && (
         <p style={{ fontSize: 13, color: colors.muted, margin: "-12px 0 0", lineHeight: 1.5 }}>
-          Mostrando la evaluacion mas reciente ({formatDate(ev.fecha)}).
+          Mostrando la evaluación más reciente ({formatDate(ev.fecha)}).
         </p>
       )}
 
@@ -159,8 +172,8 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
         {/* CAS sub-scores */}
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           {[
-            { label: "Orientacion", score: ev.informacionOrientacion, max: 12 },
-            { label: "Hab. Mental", score: ev.habilidadMental, max: 11 },
+            { label: "Orientación", score: ev.informacionOrientacion, max: 12 },
+            { label: "Hab. mental", score: ev.habilidadMental, max: 11 },
             { label: "Psicomotricidad", score: ev.psicomotricidad, max: 12 },
           ].map((s) => (
             <div key={s.label} style={{ flex: "1 1 80px", background: "rgba(255,255,255,0.6)", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
@@ -173,15 +186,15 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
       </Card>
 
       <p style={{ fontSize: 14, color: colors.dark, margin: 0, lineHeight: 1.6 }}>
-        Cada area refleja habilidades que se fortalecen con la practica y el acompanamiento.
+        Cada área refleja habilidades que se fortalecen con la práctica y el acompañamiento.
       </p>
 
       {/* 3B: Radar Chart — 3 CAS domains */}
       <Card>
         <SectionTitle
           icon="🕸️"
-          title="Perfil CAS"
-          subtitle="Las 3 areas que componen el puntaje CAS (% del maximo)"
+          title="Tamizaje cognitivo"
+          subtitle="Las 3 áreas del bienestar cognitivo"
         />
         <ResponsiveContainer width="100%" height={280}>
           <RadarChart data={radarData} cx="50%" cy="50%">
@@ -214,8 +227,8 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
       <Card>
         <SectionTitle
           icon="📊"
-          title="Puntaje por area"
-          subtitle="Resultado obtenido en cada seccion evaluada"
+          title="Puntaje por área"
+          subtitle="Resultado obtenido en cada sección evaluada."
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {barData.map((d) => {
@@ -241,7 +254,7 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
             <span style={{ fontSize: 24 }}>🕐</span>
             <p style={{ fontSize: 14, color: colors.dark, margin: 0, lineHeight: 1.6 }}>
-              El dibujo del reloj {ev.dibujoReloj}/10sugiere areas de oportunidad en funciones visuoconstructivas y planificacion. Estas habilidades se fortalecen con practica.
+              El dibujo del reloj {ev.dibujoReloj}/10 sugiere áreas de oportunidad en funciones visuoconstructivas y planificación. Estas habilidades se fortalecen con práctica.
             </p>
           </div>
         </Card>
@@ -250,7 +263,7 @@ export default function TamizajeTab({ tamizaje, patientFirstName }: Props) {
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
             <span style={{ fontSize: 24 }}>🕐</span>
             <p style={{ fontSize: 14, color: colors.dark, margin: 0, lineHeight: 1.6 }}>
-              El dibujo del reloj {ev.dibujoReloj}/10 se encuentra dentro de parametros esperados.
+              El dibujo del reloj {ev.dibujoReloj}/10 se encuentra dentro de parámetros esperados.
             </p>
           </div>
         </Card>
