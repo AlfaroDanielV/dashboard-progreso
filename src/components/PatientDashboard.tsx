@@ -159,9 +159,13 @@ export default function PatientDashboard({ data, patientContext }: Props) {
       ? evaluations[evaluations.length - 1].totalACE - evaluations[0].totalACE
       : 0;
 
+  const latestACE = evaluations.length > 0
+    ? evaluations[evaluations.length - 1]
+    : null;
+
   const currentScore =
-    evaluations.length > 0
-      ? evaluations[evaluations.length - 1].totalACE
+    latestACE
+      ? latestACE.totalACE
       : 0;
 
   const sessionPct = familyInfo.totalSessionsPlan > 0
@@ -600,6 +604,7 @@ export default function PatientDashboard({ data, patientContext }: Props) {
           <TamizajeTab
             tamizaje={tamizaje}
             patientFirstName={firstName}
+            latestACE={latestACE}
           />
         )}
         {activeTab === "sesiones" && (
